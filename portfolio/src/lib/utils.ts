@@ -35,3 +35,27 @@ export function formatDate(date: string) {
     return `${fullDate} (${yearsAgo}y ago)`;
   }
 }
+
+const rateLimitStore = new Map<string, { count: number; timestamp: number }>();
+const WINDOW_SIZE_MS = 60 * 1000; // 1 minute
+const MAX_REQUESTS = 10; // 10 requests per minute
+
+export function checkRateLimit(key: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitStore.get(key);
+
+  if (!entry || now - entry.timestamp > WINDOW_SIZE_MS) {
+    // If no entry or window has expired, reset
+    rateLimitStore.set(key, { count: 1, timestamp: now });
+    return true;
+  }
+
+  if (entry.count < MAX_REQUESTS) {
+    entry.count++;
+    rateLimitStore.set(key, entry);
+    return true;
+  }
+
+  // Rate limit exceeded
+  return false;
+}
